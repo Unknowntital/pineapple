@@ -78,7 +78,7 @@ html, body {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  position: fixed; /* fix for mobile browser bouncing and bottom overflow */
+  overscroll-behavior: none;
 }
 
 body {
@@ -386,15 +386,14 @@ input, textarea {
 
 /* Sidebar Overlay (mobile) */
 .sidebar-overlay {
-  display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   z-index: 40;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--transition-normal);
+  visibility: hidden;
+  transition: opacity var(--transition-normal), visibility var(--transition-normal);
 }
 
 /* Sidebar */
@@ -1449,13 +1448,9 @@ input, textarea {
     min-width: var(--sidebar-width) !important;
   }
   
-  .sidebar-overlay {
-    display: block;
-  }
-  
   .sidebar-overlay.visible {
     opacity: 1;
-    pointer-events: all;
+    visibility: visible;
   }
   
   .suggestions-grid {
