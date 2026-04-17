@@ -76,7 +76,9 @@
 
 html, body {
   height: 100%;
+  width: 100%;
   overflow: hidden;
+  position: fixed; /* fix for mobile browser bouncing and bottom overflow */
 }
 
 body {
@@ -375,10 +377,11 @@ input, textarea {
 
 .chat-app {
   display: flex;
-  height: 100vh;
+  height: 100%;
   width: 100%;
   background: var(--bg-primary);
   position: relative;
+  overflow: hidden;
 }
 
 /* Sidebar Overlay (mobile) */
@@ -1426,12 +1429,12 @@ input, textarea {
 
 @media (max-width: 768px) {
   .sidebar {
-    position: fixed;
+    position: absolute;
     left: 0;
     top: 0;
     height: 100%;
-    width: var(--sidebar-width);
-    min-width: var(--sidebar-width);
+    width: var(--sidebar-width) !important;
+    min-width: var(--sidebar-width) !important;
     transform: translateX(-100%);
     box-shadow: var(--shadow-lg);
     z-index: 50;
@@ -1442,9 +1445,8 @@ input, textarea {
   }
   
   .sidebar:not(.open) {
-    width: var(--sidebar-width);
-    min-width: var(--sidebar-width);
-    overflow: visible;
+    width: var(--sidebar-width) !important;
+    min-width: var(--sidebar-width) !important;
   }
   
   .sidebar-overlay {
