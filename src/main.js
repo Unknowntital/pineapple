@@ -282,6 +282,13 @@ function renderChat() {
                         placeholder="Message Pineapple..." 
                         rows="1"
                         ${state.isLoading ? 'disabled' : ''}></textarea>
+              <button class="voice-btn" id="voice-btn" title="Voice Input" ${state.isLoading ? 'disabled' : ''}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="22"></line>
+                </svg>
+              </button>
               ${state.isLoading ? `
                 <button class="stop-btn" id="stop-btn" title="Stop generating">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
@@ -653,6 +660,9 @@ function attachChatListeners() {
 
   // Scroll to bottom
   scrollToBottom();
+
+  // Voice Input Setup
+  setupVoiceInput();
 }
 
 function renderSidebarChats() {
@@ -971,3 +981,69 @@ document.addEventListener('keydown', (e) => {
 // ========================================
 window.addEventListener('hashchange', route);
 route();
+
+// ========================================
+// Voice Input Logic
+// ========================================
+let recognition = null;
+let isSpeaking = false;
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onresult = (event) => {
+    let transcript = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      transcript += event.results[i][0].transcript;
+    }
+    const textarea = document.getElementById('chat-input');
+    if (textarea) {
+      textarea.value = transcript;
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    }
+  };
+
+  recognition.onend = () => {
+    isSpeaking = false;
+    const btn = document.getElementById('voice-btn');
+    if (btn) btn.classList.remove('listening');
+    document.getElementById('chat-input')?.focus();
+  };
+
+  recognition.onerror = (event) => {
+    console.error("Speech recognition error", event.error);
+    isSpeaking = false;
+    const btn = document.getElementById('voice-btn');
+    if (btn) btn.classList.remove('listening');
+  };
+}
+
+function setupVoiceInput() {
+  const voiceBtn = document.getElementById('voice-btn');
+  if (!voiceBtn) return;
+  
+  if (!recognition) {
+    voiceBtn.style.display = 'none';
+    return;
+  }
+
+  voiceBtn.addEventListener('click', () => {
+    if (isSpeaking) {
+      recognition.stop();
+    } else {
+      const textarea = document.getElementById('chat-input');
+      if (textarea) textarea.value = ''; // clear before listening
+      try {
+        recognition.start();
+        isSpeaking = true;
+        voiceBtn.classList.add('listening');
+      } catch (err) {
+        console.error("Could not start recognition:", err);
+      }
+    }
+  });
+}
