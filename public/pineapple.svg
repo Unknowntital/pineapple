@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FBBF24"/>
+      <stop offset="100%" style="stop-color:#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#059669"/>
+      <stop offset="100%" style="stop-color:#10B981"/>
+    </linearGradient>
+  </defs>
+  <!-- Pineapple body -->
+  <ellipse cx="32" cy="40" rx="16" ry="20" fill="url(#bodyGrad)" />
+  <!-- Cross-hatch pattern -->
+  <line x1="20" y1="30" x2="44" y2="30" stroke="#D97706" stroke-width="0.8" opacity="0.5"/>
+  <line x1="18" y1="36" x2="46" y2="36" stroke="#D97706" stroke-width="0.8" opacity="0.5"/>
+  <line x1="18" y1="42" x2="46" y2="42" stroke="#D97706" stroke-width="0.8" opacity="0.5"/>
+  <line x1="20" y1="48" x2="44" y2="48" stroke="#D97706" stroke-width="0.8" opacity="0.5"/>
+  <line x1="24" y1="22" x2="28" y2="58" stroke="#D97706" stroke-width="0.8" opacity="0.5"/>
+  <line x1="32" y1="20" x2="32" y2="60" stroke="#D97706" stroke-width="0.8" opacity="0.5"/>
+  <line x1="40" y1="22" x2="36" y2="58" stroke="#D97706" stroke-width="0.8" opacity="0.5"/>
+  <!-- Leaves -->
+  <path d="M32 22 Q28 10 22 4" stroke="url(#leafGrad)" fill="none" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 22 Q32 8 32 2" stroke="url(#leafGrad)" fill="none" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 22 Q36 10 42 4" stroke="url(#leafGrad)" fill="none" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 22 Q25 14 18 10" stroke="url(#leafGrad)" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M32 22 Q39 14 46 10" stroke="url(#leafGrad)" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
