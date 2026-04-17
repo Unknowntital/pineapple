@@ -390,6 +390,7 @@ input, textarea {
   backdrop-filter: blur(4px);
   z-index: 40;
   opacity: 0;
+  pointer-events: none;
   transition: opacity var(--transition-normal);
 }
 

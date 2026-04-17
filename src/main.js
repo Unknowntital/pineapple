@@ -3,7 +3,7 @@
 // ========================================
 
 import './style.css';
-import { getCurrentUser, login, register, logout, isAuthenticated } from './auth.js';
+import { getCurrentUser } from './auth.js';
 import { getChats, createChat, getChat, addMessage, deleteChat, getApiMessages, renameChat } from './chatStore.js';
 import { sendMessage } from './api.js';
 
@@ -12,7 +12,7 @@ import { sendMessage } from './api.js';
 // ========================================
 let state = {
   currentChatId: null,
-  sidebarOpen: true,
+  sidebarOpen: window.innerWidth > 768,
   isLoading: false,
   searchQuery: '',
   streamingText: '',
@@ -23,158 +23,7 @@ let state = {
 // Router
 // ========================================
 function route() {
-  if (!isAuthenticated()) {
-    const hash = window.location.hash;
-    if (hash === '#/register') {
-      renderRegister();
-    } else {
-      renderLogin();
-    }
-  } else {
-    renderChat();
-  }
-}
-
-// ========================================
-// Auth Pages
-// ========================================
-function renderLogin() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="auth-container">
-      <div class="auth-card">
-        <div class="auth-logo">
-          <div class="auth-logo-icon">🍍</div>
-          <span class="auth-logo-text">Pineapple</span>
-        </div>
-        <p class="auth-subtitle">Welcome back! Sign in to continue your conversations.</p>
-        
-        <div id="auth-alert" class="alert-message error"></div>
-        
-        <form id="login-form" class="auth-form" autocomplete="on">
-          <div class="form-group">
-            <label class="form-label" for="login-email">Email address</label>
-            <input class="form-input" type="email" id="login-email" 
-                   placeholder="you@example.com" autocomplete="email" required />
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label" for="login-password">Password</label>
-            <input class="form-input" type="password" id="login-password" 
-                   placeholder="Enter your password" autocomplete="current-password" required />
-          </div>
-          
-          <button type="submit" class="auth-btn" id="login-btn">Sign In</button>
-          
-          <div class="auth-divider">or</div>
-          
-          <p class="auth-switch">
-            Don't have an account? <a href="#/register" id="goto-register">Create one</a>
-          </p>
-        </form>
-      </div>
-    </div>
-  `;
-
-  const form = document.getElementById('login-form');
-  form.addEventListener('submit', handleLogin);
-}
-
-function renderRegister() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="auth-container">
-      <div class="auth-card">
-        <div class="auth-logo">
-          <div class="auth-logo-icon">🍍</div>
-          <span class="auth-logo-text">Pineapple</span>
-        </div>
-        <p class="auth-subtitle">Create your account and start chatting with AI.</p>
-        
-        <div id="auth-alert" class="alert-message error"></div>
-        
-        <form id="register-form" class="auth-form" autocomplete="on">
-          <div class="form-group">
-            <label class="form-label" for="register-name">Full name</label>
-            <input class="form-input" type="text" id="register-name" 
-                   placeholder="John Doe" autocomplete="name" required />
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label" for="register-email">Email address</label>
-            <input class="form-input" type="email" id="register-email" 
-                   placeholder="you@example.com" autocomplete="email" required />
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label" for="register-password">Password</label>
-            <input class="form-input" type="password" id="register-password" 
-                   placeholder="Min 6 characters" autocomplete="new-password" required />
-          </div>
-          
-          <button type="submit" class="auth-btn" id="register-btn">Create Account</button>
-          
-          <div class="auth-divider">or</div>
-          
-          <p class="auth-switch">
-            Already have an account? <a href="#/login" id="goto-login">Sign in</a>
-          </p>
-        </form>
-      </div>
-    </div>
-  `;
-
-  const form = document.getElementById('register-form');
-  form.addEventListener('submit', handleRegister);
-}
-
-async function handleLogin(e) {
-  e.preventDefault();
-  const btn = document.getElementById('login-btn');
-  const alert = document.getElementById('auth-alert');
-  const email = document.getElementById('login-email').value;
-  const password = document.getElementById('login-password').value;
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>';
-  alert.classList.remove('visible');
-
-  const result = await login(email, password);
-
-  if (result.success) {
-    window.location.hash = '#/chat';
-    route();
-  } else {
-    alert.textContent = result.error;
-    alert.classList.add('visible');
-    btn.disabled = false;
-    btn.textContent = 'Sign In';
-  }
-}
-
-async function handleRegister(e) {
-  e.preventDefault();
-  const btn = document.getElementById('register-btn');
-  const alert = document.getElementById('auth-alert');
-  const name = document.getElementById('register-name').value;
-  const email = document.getElementById('register-email').value;
-  const password = document.getElementById('register-password').value;
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>';
-  alert.classList.remove('visible');
-
-  const result = await register(name, email, password);
-
-  if (result.success) {
-    window.location.hash = '#/chat';
-    route();
-  } else {
-    alert.textContent = result.error;
-    alert.classList.add('visible');
-    btn.disabled = false;
-    btn.textContent = 'Create Account';
-  }
+  renderChat();
 }
 
 // ========================================
@@ -238,9 +87,6 @@ function renderChat() {
               <div class="user-name">${escapeHtml(user.name)}</div>
               <div class="user-email">${escapeHtml(user.email)}</div>
             </div>
-            <button class="logout-btn" id="logout-btn" title="Sign out">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </button>
           </div>
         </div>
       </aside>
@@ -591,14 +437,6 @@ function attachChatListeners() {
       state.currentChatId = null;
       renderChat();
     }
-  });
-
-  // Logout
-  document.getElementById('logout-btn')?.addEventListener('click', () => {
-    logout();
-    state.currentChatId = null;
-    window.location.hash = '#/login';
-    route();
   });
 
   // Send message
