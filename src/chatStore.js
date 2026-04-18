@@ -2,18 +2,14 @@
 // Chat Store — Manages conversations
 // ========================================
 
-const CHATS_KEY_PREFIX = 'pineapple_chats_';
-
-function getChatsKey(userId) {
-  return CHATS_KEY_PREFIX + userId;
-}
+const CHATS_KEY = 'pineapple_chats_local';
 
 /**
- * Get all chats for a user
+ * Get all chats
  * @returns {Array} list of chat objects
  */
-export function getChats(userId) {
-  const data = localStorage.getItem(getChatsKey(userId));
+export function getChats() {
+  const data = localStorage.getItem(CHATS_KEY);
   if (!data) return [];
   try {
     return JSON.parse(data);
@@ -23,18 +19,18 @@ export function getChats(userId) {
 }
 
 /**
- * Save chats for a user
+ * Save chats
  */
-function saveChats(userId, chats) {
-  localStorage.setItem(getChatsKey(userId), JSON.stringify(chats));
+function saveChats(chats) {
+  localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
 }
 
 /**
  * Create a new chat
  * @returns {Object} the new chat object
  */
-export function createChat(userId) {
-  const chats = getChats(userId);
+export function createChat() {
+  const chats = getChats();
   const chat = {
     id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
     title: 'New Chat',
@@ -43,23 +39,23 @@ export function createChat(userId) {
     updatedAt: new Date().toISOString()
   };
   chats.unshift(chat);
-  saveChats(userId, chats);
+  saveChats(chats);
   return chat;
 }
 
 /**
  * Get a specific chat
  */
-export function getChat(userId, chatId) {
-  const chats = getChats(userId);
+export function getChat(chatId) {
+  const chats = getChats();
   return chats.find(c => c.id === chatId) || null;
 }
 
 /**
  * Add a message to a chat
  */
-export function addMessage(userId, chatId, role, content) {
-  const chats = getChats(userId);
+export function addMessage(chatId, role, content) {
+  const chats = getChats();
   const chat = chats.find(c => c.id === chatId);
   if (!chat) return null;
 
@@ -78,36 +74,36 @@ export function addMessage(userId, chatId, role, content) {
     chat.title = content.substring(0, 50) + (content.length > 50 ? '...' : '');
   }
 
-  saveChats(userId, chats);
+  saveChats(chats);
   return message;
 }
 
 /**
  * Delete a chat
  */
-export function deleteChat(userId, chatId) {
-  let chats = getChats(userId);
+export function deleteChat(chatId) {
+  let chats = getChats();
   chats = chats.filter(c => c.id !== chatId);
-  saveChats(userId, chats);
+  saveChats(chats);
 }
 
 /**
  * Rename a chat
  */
-export function renameChat(userId, chatId, newTitle) {
-  const chats = getChats(userId);
+export function renameChat(chatId, newTitle) {
+  const chats = getChats();
   const chat = chats.find(c => c.id === chatId);
   if (!chat) return;
   chat.title = newTitle;
   chat.updatedAt = new Date().toISOString();
-  saveChats(userId, chats);
+  saveChats(chats);
 }
 
 /**
  * Get chat messages formatted for the API
  */
-export function getApiMessages(userId, chatId) {
-  const chat = getChat(userId, chatId);
+export function getApiMessages(chatId) {
+  const chat = getChat(chatId);
   if (!chat) return [];
   return chat.messages.map(m => ({
     role: m.role,

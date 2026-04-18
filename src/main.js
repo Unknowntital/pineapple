@@ -3,7 +3,6 @@
 // ========================================
 
 import './style.css';
-import { getCurrentUser } from './auth.js';
 import { getChats, createChat, getChat, addMessage, deleteChat, getApiMessages, renameChat } from './chatStore.js';
 import { sendMessage } from './api.js';
 
@@ -30,14 +29,10 @@ function route() {
 // Chat UI
 // ========================================
 function renderChat() {
-  const user = getCurrentUser();
-  if (!user) return route();
-
-  const allChats = getChats(user.id);
+  const allChats = getChats();
   const filteredChats = state.searchQuery 
     ? allChats.filter(c => c.title.toLowerCase().includes(state.searchQuery.toLowerCase()))
     : allChats;
-  const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -81,13 +76,6 @@ function renderChat() {
         </div>
         
         <div class="sidebar-footer">
-          <div class="user-profile" id="user-profile">
-            <div class="user-avatar">${initials}</div>
-            <div class="user-info">
-              <div class="user-name">${escapeHtml(user.name)}</div>
-              <div class="user-email">${escapeHtml(user.email)}</div>
-            </div>
-          </div>
         </div>
       </aside>
       
@@ -100,7 +88,7 @@ function renderChat() {
             </button>
             <div class="topbar-title">
               ${state.currentChatId ? `
-                <span class="topbar-chat-title" id="topbar-chat-title">${escapeHtml(getChat(user.id, state.currentChatId)?.title || 'Chat')}</span>
+                <span class="topbar-chat-title" id="topbar-chat-title">${escapeHtml(getChat(state.currentChatId)?.title || 'Chat')}</span>
               ` : 'Pineapple AI'}
               <span class="model-badge">
                 <span class="model-dot"></span>
@@ -118,7 +106,7 @@ function renderChat() {
         </header>
         
         <div class="chat-messages" id="chat-messages">
-          ${state.currentChatId ? renderMessages(user.id, state.currentChatId) : renderWelcome(user.name)}
+          ${state.currentChatId ? renderMessages(state.currentChatId) : renderWelcome()}
         </div>
         
         <div class="chat-input-area">
@@ -164,13 +152,12 @@ function renderChat() {
   }
 }
 
-function renderWelcome(userName) {
-  const firstName = userName.split(' ')[0];
+function renderWelcome() {
   return `
     <div class="welcome-screen">
       <div class="welcome-glow"></div>
       <div class="welcome-icon">🍍</div>
-      <h1 class="welcome-title">Hello, ${escapeHtml(firstName)}!</h1>
+      <h1 class="welcome-title">Hello there!</h1>
       <p class="welcome-sub">How can I help you today?</p>
       
       <div class="suggestions-grid">
@@ -263,12 +250,9 @@ function renderChatItem(chat) {
   `;
 }
 
-function renderMessages(userId, chatId) {
-  const chat = getChat(userId, chatId);
-  if (!chat) return renderWelcome(getCurrentUser().name);
-
-  const user = getCurrentUser();
-  const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+function renderMessages(chatId) {
+  const chat = getChat(chatId);
+  if (!chat) return renderWelcome();
 
   let html = '<div class="messages-container">';
   
@@ -279,11 +263,11 @@ function renderMessages(userId, chatId) {
     html += `
       <div class="message ${msg.role}" id="${msg.id}">
         <div class="message-avatar">
-          ${msg.role === 'user' ? initials : '🍍'}
+          ${msg.role === 'user' ? 'U' : '🍍'}
         </div>
         <div class="message-body">
           <div class="message-header">
-            <span class="message-role">${msg.role === 'user' ? escapeHtml(user.name) : 'Pineapple AI'}</span>
+            <span class="message-role">${msg.role === 'user' ? 'You' : 'Pineapple AI'}</span>
           </div>
           <div class="message-text">${formatMessage(msg.content)}</div>
           <div class="message-actions">
@@ -345,8 +329,6 @@ function renderMessages(userId, chatId) {
 // Event Listeners
 // ========================================
 function attachChatListeners() {
-  const user = getCurrentUser();
-
   // Toggle sidebar
   document.getElementById('toggle-sidebar')?.addEventListener('click', () => {
     state.sidebarOpen = !state.sidebarOpen;
@@ -405,7 +387,7 @@ function attachChatListeners() {
       e.stopPropagation();
       const chatId = btn.dataset.deleteId;
       if (confirm('Delete this chat?')) {
-        deleteChat(user.id, chatId);
+        deleteChat(chatId);
         if (state.currentChatId === chatId) {
           state.currentChatId = null;
         }
@@ -419,12 +401,12 @@ function attachChatListeners() {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const chatId = btn.dataset.renameId;
-      const chat = getChat(user.id, chatId);
+      const chat = getChat(chatId);
       if (!chat) return;
       
       const newTitle = prompt('Rename chat:', chat.title);
       if (newTitle && newTitle.trim()) {
-        renameChat(user.id, chatId, newTitle.trim());
+        renameChat(chatId, newTitle.trim());
         renderChat();
       }
     });
@@ -433,7 +415,7 @@ function attachChatListeners() {
   // Clear current chat
   document.getElementById('clear-chat-btn')?.addEventListener('click', () => {
     if (state.currentChatId && confirm('Delete this chat?')) {
-      deleteChat(user.id, state.currentChatId);
+      deleteChat(state.currentChatId);
       state.currentChatId = null;
       renderChat();
     }
@@ -476,7 +458,7 @@ function attachChatListeners() {
   document.querySelectorAll('[data-copy-msg]').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.copyMsg);
-      const chat = getChat(user.id, state.currentChatId);
+      const chat = getChat(state.currentChatId);
       if (chat && chat.messages[idx]) {
         copyToClipboard(chat.messages[idx].content, btn);
       }
@@ -504,8 +486,7 @@ function attachChatListeners() {
 }
 
 function renderSidebarChats() {
-  const user = getCurrentUser();
-  const allChats = getChats(user.id);
+  const allChats = getChats();
   const filteredChats = state.searchQuery 
     ? allChats.filter(c => c.title.toLowerCase().includes(state.searchQuery.toLowerCase()))
     : allChats;
@@ -518,7 +499,6 @@ function renderSidebarChats() {
     : `<div class="sidebar-empty"><p>${state.searchQuery ? 'No chats found' : 'No conversations yet'}</p></div>`;
 
   // Reattach chat item listeners
-  const user2 = getCurrentUser();
   container.querySelectorAll('.chat-item').forEach(item => {
     item.addEventListener('click', (e) => {
       if (e.target.closest('.chat-action-btn')) return;
@@ -532,7 +512,7 @@ function renderSidebarChats() {
       e.stopPropagation();
       const chatId = btn.dataset.deleteId;
       if (confirm('Delete this chat?')) {
-        deleteChat(user2.id, chatId);
+        deleteChat(chatId);
         if (state.currentChatId === chatId) state.currentChatId = null;
         renderChat();
       }
@@ -543,11 +523,11 @@ function renderSidebarChats() {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const chatId = btn.dataset.renameId;
-      const chat = getChat(user2.id, chatId);
+      const chat = getChat(chatId);
       if (!chat) return;
       const newTitle = prompt('Rename chat:', chat.title);
       if (newTitle?.trim()) {
-        renameChat(user2.id, chatId, newTitle.trim());
+        renameChat(chatId, newTitle.trim());
         renderChat();
       }
     });
@@ -562,17 +542,14 @@ async function handleSend() {
   const text = input?.value?.trim();
   if (!text || state.isLoading) return;
 
-  const user = getCurrentUser();
-  if (!user) return;
-
   // Create chat if needed
   if (!state.currentChatId) {
-    const chat = createChat(user.id);
+    const chat = createChat();
     state.currentChatId = chat.id;
   }
 
   // Save user message
-  addMessage(user.id, state.currentChatId, 'user', text);
+  addMessage(state.currentChatId, 'user', text);
   input.value = '';
   input.style.height = 'auto';
 
@@ -583,7 +560,7 @@ async function handleSend() {
   scrollToBottom();
 
   // Get conversation context
-  const apiMessages = getApiMessages(user.id, state.currentChatId);
+  const apiMessages = getApiMessages(state.currentChatId);
 
   // Call API with streaming callback
   const { error, output } = await sendMessage(apiMessages, (chunk) => {
@@ -593,10 +570,10 @@ async function handleSend() {
   });
 
   if (error) {
-    addMessage(user.id, state.currentChatId, 'assistant', 
+    addMessage(state.currentChatId, 'assistant', 
       `⚠️ I encountered an error: ${error}\n\nPlease try again.`);
   } else {
-    addMessage(user.id, state.currentChatId, 'assistant', output || 'I had trouble generating a response. Please try again.');
+    addMessage(state.currentChatId, 'assistant', output || 'I had trouble generating a response. Please try again.');
   }
 
   state.isLoading = false;
@@ -607,19 +584,17 @@ async function handleSend() {
 
 function handleStop() {
   state.isLoading = false;
-  const user = getCurrentUser();
-  if (state.streamingText && user) {
-    addMessage(user.id, state.currentChatId, 'assistant', state.streamingText);
+  if (state.streamingText) {
+    addMessage(state.currentChatId, 'assistant', state.streamingText);
   }
   state.streamingText = '';
   renderChat();
 }
 
 async function handleRegenerate() {
-  const user = getCurrentUser();
-  if (!user || !state.currentChatId || state.isLoading) return;
+  if (!state.currentChatId || state.isLoading) return;
 
-  const chat = getChat(user.id, state.currentChatId);
+  const chat = getChat(state.currentChatId);
   if (!chat || chat.messages.length < 2) return;
 
   // Remove last assistant message
@@ -627,11 +602,11 @@ async function handleRegenerate() {
   if (lastMsg.role === 'assistant') {
     chat.messages.pop();
     // Save the modified chat
-    const allChats = getChats(user.id);
+    const allChats = getChats();
     const idx = allChats.findIndex(c => c.id === chat.id);
     if (idx !== -1) {
       allChats[idx] = chat;
-      localStorage.setItem('pineapple_chats_' + user.id, JSON.stringify(allChats));
+      localStorage.setItem('pineapple_chats_local', JSON.stringify(allChats));
     }
   }
 
@@ -640,7 +615,7 @@ async function handleRegenerate() {
   renderChat();
   scrollToBottom();
 
-  const apiMessages = getApiMessages(user.id, state.currentChatId);
+  const apiMessages = getApiMessages(state.currentChatId);
   const { error, output } = await sendMessage(apiMessages, (chunk) => {
     state.streamingText = chunk;
     updateStreamingContent();
@@ -648,9 +623,9 @@ async function handleRegenerate() {
   });
 
   if (error) {
-    addMessage(user.id, state.currentChatId, 'assistant', `⚠️ ${error}`);
+    addMessage(state.currentChatId, 'assistant', `⚠️ ${error}`);
   } else {
-    addMessage(user.id, state.currentChatId, 'assistant', output || 'Failed to regenerate.');
+    addMessage(state.currentChatId, 'assistant', output || 'Failed to regenerate.');
   }
 
   state.isLoading = false;
@@ -667,7 +642,6 @@ function updateStreamingContent() {
     // Need to switch from typing indicator to streaming view
     const typingMsg = document.getElementById('typing-msg');
     if (typingMsg) {
-      const user = getCurrentUser();
       typingMsg.outerHTML = `
         <div class="message assistant streaming" id="streaming-msg">
           <div class="message-avatar">🍍</div>
